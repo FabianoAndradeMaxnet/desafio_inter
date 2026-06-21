@@ -43,3 +43,16 @@ export interface PageResponse<T> {
   meta: PageMetadata;
   error: ApiError | null;
 }
+
+export type TaskRealtimeEventType = "CONNECTED" | "TASK_CREATED" | "TASK_STATUS_UPDATED";
+
+export interface TaskRealtimeEvent {
+  eventId: string;
+  type: TaskRealtimeEventType;
+  taskId: string | null;
+  title: string | null;
+  status: TaskStatus | null;
+  previousStatus: TaskStatus | null;
+  newStatus: TaskStatus | null;
+  occurredAt: string;
+}

@@ -97,6 +97,7 @@ class TaskFlowIntegrationTest {
 
     private Map<String, Object> applicationProperties() {
         return Map.of(
+                "micronaut.server.port", -1,
                 "datasources.default.url", POSTGRES.getJdbcUrl(),
                 "datasources.default.username", POSTGRES.getUsername(),
                 "datasources.default.password", POSTGRES.getPassword(),

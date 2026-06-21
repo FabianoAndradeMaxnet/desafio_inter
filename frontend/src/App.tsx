@@ -3,7 +3,13 @@ import { ErrorMessage } from "./components/ErrorMessage";
 import { Loading } from "./components/Loading";
 import { TaskForm } from "./components/TaskForm";
 import { TaskList } from "./components/TaskList";
-import { ApiRequestError, createTask, listTasks, updateTaskStatus } from "./services/api";
+import {
+  ApiRequestError,
+  createTask,
+  listTasks,
+  subscribeToTaskEvents,
+  updateTaskStatus,
+} from "./services/api";
 import type { CreateTaskPayload, PageMetadata, Task, TaskStatus } from "./types/task";
 
 interface UiError {
@@ -22,8 +28,10 @@ export function App() {
   const [updatingTaskId, setUpdatingTaskId] = useState<string | null>(null);
   const [error, setError] = useState<UiError | null>(null);
 
-  const loadTasks = useCallback(async () => {
-    setIsLoading(true);
+  const loadTasks = useCallback(async (showLoading = true) => {
+    if (showLoading) {
+      setIsLoading(true);
+    }
     setError(null);
 
     try {
@@ -33,12 +41,28 @@ export function App() {
     } catch (caughtError) {
       setError(toUiError(caughtError));
     } finally {
-      setIsLoading(false);
+      if (showLoading) {
+        setIsLoading(false);
+      }
     }
   }, []);
 
   useEffect(() => {
     void loadTasks();
+  }, [loadTasks]);
+
+  useEffect(() => {
+    const eventSource = subscribeToTaskEvents(() => {
+      void loadTasks(false);
+    });
+
+    eventSource.onerror = () => {
+      console.warn("Task realtime connection unavailable. EventSource will retry automatically.");
+    };
+
+    return () => {
+      eventSource.close();
+    };
   }, [loadTasks]);
 
   async function handleCreateTask(payload: CreateTaskPayload) {
@@ -108,12 +132,23 @@ export function App() {
         <section className="tasks-panel">
           <div className="panel-heading">
             <h2>Lista</h2>
-            <button type="button" className="secondary-button" onClick={loadTasks} disabled={isLoading}>
+            <button
+              type="button"
+              className="secondary-button"
+              onClick={() => void loadTasks()}
+              disabled={isLoading}
+            >
               Atualizar
             </button>
           </div>
 
-          {error && <ErrorMessage message={error.message} details={error.details} onRetry={loadTasks} />}
+          {error && (
+            <ErrorMessage
+              message={error.message}
+              details={error.details}
+              onRetry={() => void loadTasks()}
+            />
+          )}
 
           {isLoading ? (
             <Loading />

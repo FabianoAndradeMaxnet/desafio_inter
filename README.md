@@ -348,6 +348,15 @@ DELETE /api/v1/tasks/{id}
 GET /actuator/health
 ```
 
+### Eventos em tempo real
+
+```http
+GET /api/v1/tasks/events
+Accept: text/event-stream
+```
+
+Esse endpoint usa Server-Sent Events (SSE) para retransmitir aos browsers conectados os eventos consumidos do Kafka.
+
 ### OpenAPI / Swagger
 
 ```text
@@ -364,7 +373,24 @@ Eventos implementados:
 - `TASK_CREATED`
 - `TASK_STATUS_UPDATED`
 
-O domínio não conhece Kafka. A aplicação usa a porta `TaskEventPublisher`, e a infraestrutura implementa essa porta com Kafka.
+O domínio não conhece Kafka. A aplicação usa a porta `TaskEventPublisher`, e a infraestrutura implementa essa porta com Kafka. Quando o consumidor Kafka recebe `TASK_CREATED` ou `TASK_STATUS_UPDATED`, ele também publica o evento em um hub interno de tempo real. O endpoint SSE `/api/v1/tasks/events` retransmite esses eventos para os browsers conectados.
+
+Fluxo em tempo real:
+
+1. O frontend cria ou altera o status de uma tarefa.
+2. A API persiste a alteração no PostgreSQL.
+3. A aplicação publica um evento no Kafka.
+4. O consumidor Kafka processa o evento.
+5. O evento é enviado por SSE aos browsers conectados.
+6. Cada browser recarrega a lista de tarefas automaticamente.
+
+Para testar a sincronização, abra `http://localhost:5173` em duas abas ou dois browsers. Crie uma tarefa ou altere o status em uma aba; a outra deve atualizar a lista automaticamente.
+
+Também é possível observar o stream diretamente:
+
+```bash
+curl -N http://localhost:8080/api/v1/tasks/events
+```
 
 ## Testes
 

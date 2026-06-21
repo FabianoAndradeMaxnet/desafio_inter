@@ -3,11 +3,13 @@ import type {
   CreateTaskPayload,
   PageResponse,
   Task,
+  TaskRealtimeEvent,
   TaskStatus,
 } from "../types/task";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "";
 const TASKS_PATH = `${API_BASE_URL}/api/v1/tasks`;
+const TASK_EVENTS_PATH = `${TASKS_PATH}/events`;
 
 export class ApiRequestError extends Error {
   readonly code: string;
@@ -39,6 +41,18 @@ export async function updateTaskStatus(taskId: string, status: TaskStatus): Prom
     method: "PATCH",
     body: JSON.stringify({ status }),
   });
+}
+
+export function subscribeToTaskEvents(onEvent: (event: TaskRealtimeEvent) => void): EventSource {
+  const eventSource = new EventSource(TASK_EVENTS_PATH);
+  const handleTaskEvent = (event: MessageEvent<string>) => {
+    onEvent(JSON.parse(event.data) as TaskRealtimeEvent);
+  };
+
+  eventSource.addEventListener("TASK_CREATED", handleTaskEvent);
+  eventSource.addEventListener("TASK_STATUS_UPDATED", handleTaskEvent);
+
+  return eventSource;
 }
 
 async function requestData<T>(url: string, init?: RequestInit): Promise<T> {
