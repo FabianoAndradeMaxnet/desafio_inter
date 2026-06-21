@@ -103,6 +103,20 @@ Serviços:
 - Healthcheck: `http://localhost:8080/actuator/health`
 - Swagger UI: `http://localhost:8080/swagger-ui`
 
+O `docker-compose.yml` orquestra backend, PostgreSQL e Kafka. Para usar a interface web em modo de desenvolvimento, execute o frontend separadamente:
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+Frontend local:
+
+```text
+http://localhost:5173
+```
+
 Portas podem ser sobrescritas:
 
 ```bash
@@ -115,6 +129,12 @@ Suba apenas dependências:
 
 ```bash
 docker compose up postgres kafka
+```
+
+Confirme que os serviços estão saudáveis:
+
+```bash
+docker compose ps
 ```
 
 Execute o backend:
@@ -151,6 +171,61 @@ O Vite possui proxy para `/api` apontando para `http://localhost:8080`. Para apo
 
 ```bash
 VITE_API_BASE_URL=http://localhost:8081 npm run dev
+```
+
+## Problemas Comuns
+
+### Porta 5432 em uso
+
+Se o PostgreSQL não subir com erro semelhante a `Bind for 0.0.0.0:5432 failed: port is already allocated`, já existe outro processo ou container usando a porta `5432`.
+
+Verifique os containers ativos:
+
+```bash
+docker ps
+```
+
+Pare o container que está ocupando a porta, se ele não for necessário:
+
+```bash
+docker stop dev-postgres
+docker compose up postgres kafka
+```
+
+Ou rode o PostgreSQL do projeto em outra porta:
+
+```bash
+POSTGRES_PORT=55432 docker compose up postgres kafka
+```
+
+Nesse caso, execute o backend apontando para a porta alternativa:
+
+```bash
+JDBC_URL=jdbc:postgresql://localhost:55432/todo \
+KAFKA_BOOTSTRAP_SERVERS=localhost:9094 \
+mvn mn:run
+```
+
+### Conexão recusada na porta 5432
+
+Se `mvn mn:run` indicar que a conexão com `localhost:5432` foi recusada, confirme se o PostgreSQL está ativo e com porta publicada:
+
+```bash
+docker compose ps postgres
+```
+
+A saída deve mostrar algo como:
+
+```text
+0.0.0.0:5432->5432/tcp
+```
+
+Se o container estiver ativo sem essa publicação de porta, recrie o PostgreSQL:
+
+```bash
+docker compose stop postgres
+docker compose rm -f postgres
+docker compose up -d postgres kafka
 ```
 
 ## Docker
