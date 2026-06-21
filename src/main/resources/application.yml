@@ -1,0 +1,79 @@
+micronaut:
+  application:
+    name: todo-senior-challenge
+  server:
+    port: ${SERVER_PORT:8080}
+  router:
+    static-resources:
+      swagger:
+        paths:
+          - classpath:META-INF/swagger
+        mapping: /swagger/**
+      swagger-ui:
+        paths:
+          - classpath:META-INF/swagger/views/swagger-ui
+        mapping: /swagger-ui/**
+
+datasources:
+  default:
+    url: ${JDBC_URL:`jdbc:postgresql://localhost:5432/todo`}
+    username: ${JDBC_USER:todo}
+    password: ${JDBC_PASSWORD:todo}
+    driver-class-name: org.postgresql.Driver
+    db-type: postgres
+    dialect: POSTGRES
+
+jpa:
+  default:
+    entity-scan:
+      packages:
+        - com.example.todo.infrastructure.persistence
+    properties:
+      jakarta.persistence.validation.mode: none
+      hibernate:
+        hbm2ddl:
+          auto: none
+        show_sql: false
+        format_sql: false
+
+flyway:
+  datasources:
+    default:
+      enabled: true
+      locations:
+        - classpath:db/migration
+
+kafka:
+  bootstrap:
+    servers: ${KAFKA_BOOTSTRAP_SERVERS:`localhost:9094`}
+  producers:
+    default:
+      key:
+        serializer: org.apache.kafka.common.serialization.StringSerializer
+      value:
+        serializer: org.apache.kafka.common.serialization.StringSerializer
+  consumers:
+    default:
+      key:
+        deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value:
+        deserializer: org.apache.kafka.common.serialization.StringDeserializer
+
+app:
+  kafka:
+    topics:
+      task-events: ${TASK_EVENTS_TOPIC:task-events}
+    consumer:
+      group-id: ${TASK_EVENTS_GROUP_ID:todo-task-events}
+
+endpoints:
+  health:
+    enabled: true
+    sensitive: false
+    details-visible: ANONYMOUS
+  all:
+    path: /actuator
+
+logger:
+  levels:
+    com.example.todo: INFO

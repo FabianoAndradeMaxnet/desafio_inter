@@ -1,0 +1,13 @@
+target/
+.m2/
+.idea/
+.vscode/
+*.iml
+.env
+.env.*
+!.env.example
+frontend/.env
+frontend/.env.*
+!frontend/.env.example
+frontend/dist/
+frontend/node_modules/
